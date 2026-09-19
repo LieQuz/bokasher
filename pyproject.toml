@@ -1,0 +1,31 @@
+[project]
+name = "bokasher"
+version = "0.1.0"
+description = "動画の顔を自動でボカすデスクトップアプリ"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "customtkinter>=5.2.2",
+    "mediapipe>=0.10.21,<1",
+    "numpy>=1.26,<2",
+    "opencv-python-headless>=4.9,<5",
+    "pillow>=10.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+bokasher = "bokasher.app:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
