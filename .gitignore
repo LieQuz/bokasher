@@ -22,3 +22,6 @@ venv/
 .ruff_cache/
 node_modules/
 desktop/dist/
+desktop/release/
+desktop/resources/
+desktop/build/

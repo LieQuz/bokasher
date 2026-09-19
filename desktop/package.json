@@ -1,22 +1,85 @@
 {
   "name": "bokasher-desktop",
   "version": "0.1.0",
+  "description": "動画の顔をローカルで自動的にボカすアプリ",
+  "author": "bokasher",
   "private": true,
   "type": "module",
   "main": "electron/main.mjs",
   "scripts": {
     "start": "concurrently -k \"vite --host 127.0.0.1 --port 5178\" \"wait-on http://127.0.0.1:5178 && electron .\"",
-    "dev": "npm start"
+    "dev": "npm start",
+    "build": "vite build",
+    "dist:mac": "electron-builder --mac dmg --arm64"
   },
   "dependencies": {
-    "electron": "^37.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.2",
     "concurrently": "^9.2.1",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
     "vite": "^7.1.5",
     "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "app.bokasher.desktop",
+    "productName": "bokasher",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bokasher-server",
+        "to": "server"
+      },
+      {
+        "from": "resources/ffmpeg",
+        "to": "ffmpeg"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "icon": "build/dmg/icon.icns",
+      "target": [
+        "dmg"
+      ],
+      "identity": null,
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "title": "bokasher",
+      "artifactName": "bokasher-${version}-mac-${arch}.dmg",
+      "icon": "build/dmg/icon.icns",
+      "background": "build/dmg/background.png",
+      "iconSize": 80,
+      "iconTextSize": 12,
+      "window": {
+        "width": 600,
+        "height": 420
+      },
+      "contents": [
+        {
+          "x": 168,
+          "y": 228,
+          "type": "file"
+        },
+        {
+          "x": 432,
+          "y": 228,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
   }
 }

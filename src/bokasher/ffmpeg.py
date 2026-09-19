@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,9 @@ class FFmpegError(RuntimeError):
 
 
 def require_ffmpeg() -> tuple[str, str]:
+    bundled = _bundled_ffmpeg()
+    if bundled is not None:
+        return bundled
     ffmpeg = shutil.which("ffmpeg")
     ffprobe = shutil.which("ffprobe")
     if ffmpeg is None or ffprobe is None:
@@ -25,6 +29,14 @@ def require_ffmpeg() -> tuple[str, str]:
             "FFmpeg が見つかりません。macOS では `brew install ffmpeg` で導入してください。"
         )
     return ffmpeg, ffprobe
+
+
+def _bundled_ffmpeg() -> tuple[str, str] | None:
+    ffmpeg = os.environ.get("BOKASHER_FFMPEG")
+    ffprobe = os.environ.get("BOKASHER_FFPROBE")
+    if ffmpeg and ffprobe and Path(ffmpeg).exists() and Path(ffprobe).exists():
+        return ffmpeg, ffprobe
+    return None
 
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:

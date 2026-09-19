@@ -20,15 +20,38 @@ function pythonBin() {
   return process.platform === "win32" ? "python" : "python3";
 }
 
-function startServer() {
-  serverProcess = spawn(
-    pythonBin(),
-    ["-m", "bokasher.server", "--host", "127.0.0.1", "--port", String(API_PORT)],
-    {
+function serverCommand() {
+  if (!app.isPackaged) {
+    return {
+      command: pythonBin(),
+      args: ["-m", "bokasher.server", "--host", "127.0.0.1", "--port", String(API_PORT)],
       cwd: repoRoot,
-      stdio: "inherit",
-    }
-  );
+      env: process.env,
+    };
+  }
+  const resources = process.resourcesPath;
+  const command = path.join(resources, "server", "bokasher-server");
+  const ffmpegDir = path.join(resources, "ffmpeg");
+  return {
+    command,
+    args: ["--host", "127.0.0.1", "--port", String(API_PORT)],
+    cwd: path.dirname(command),
+    env: {
+      ...process.env,
+      PATH: `${ffmpegDir}${path.delimiter}${process.env.PATH || ""}`,
+      BOKASHER_FFMPEG: path.join(ffmpegDir, "ffmpeg"),
+      BOKASHER_FFPROBE: path.join(ffmpegDir, "ffprobe"),
+    },
+  };
+}
+
+function startServer() {
+  const { command, args, cwd, env } = serverCommand();
+  serverProcess = spawn(command, args, {
+    cwd,
+    env,
+    stdio: "inherit",
+  });
   serverProcess.on("exit", (code) => {
     if (code && code !== 0) {
       console.error(`bokasher server exited with ${code}`);
@@ -36,7 +59,7 @@ function startServer() {
   });
 }
 
-function waitForHealth(timeoutMs = 30000) {
+function waitForHealth(timeoutMs = 45000) {
   const started = Date.now();
   return new Promise((resolve, reject) => {
     const ping = () => {
@@ -80,7 +103,11 @@ async function createWindow() {
     },
   });
   win.removeMenu();
-  await win.loadURL("http://127.0.0.1:5178");
+  if (app.isPackaged) {
+    await win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  } else {
+    await win.loadURL("http://127.0.0.1:5178");
+  }
 }
 
 ipcMain.handle("api-base", () => API_BASE);
