@@ -1,29 +1,27 @@
-# Bokasher
+# bokasher / ぼかっしゃー
 
-動画ファイルに写っている人の顔を、ローカルで自動検出してボカす macOS 向けデスクトップアプリです。処理はすべて手元のマシンで行い、動画を外部に送信しません。
+動画ファイルに写っている人の顔を、ローカルで自動検出してボカすデスクトップアプリです。画面は Electron + React、処理は Python です。動画を外部に送信しません。
 
 ## 必要なもの
 
-- macOS
-- Python 3.10〜3.13（3.12 を推奨。MediaPipe が 3.14 以降に未対応なことがあります。1.x は macOS で初期化に失敗することがあるため 0.10 系を使います）
-- Tk 対応（Homebrew の Python なら `brew install python-tk@3.12`）
-- [FFmpeg](https://ffmpeg.org/)（`brew install ffmpeg`）
+- macOS / Windows / Linux（いまの実機確認は macOS 中心）
+- Python 3.10〜3.13（3.12 を推奨）
+- Node.js 20+
+- [FFmpeg](https://ffmpeg.org/)（macOS なら `brew install ffmpeg`）
 
 ## セットアップ
 
 ```bash
-brew install ffmpeg python-tk@3.12
+brew install ffmpeg
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"
+cd desktop && npm install && cd ..
 ```
 
-初回の検出時に、顔検出モデルを `~/.cache/bokasher/` へダウンロードします。
-
-開発用テストを走らせる場合:
+初回の検出時に、InsightFace の SCRFD-2.5G_KPS を `~/.cache/bokasher/` へダウンロードします。この重みは上流の利用条件（研究・非商用）に従います。
 
 ```bash
-pip install -e ".[dev]"
 pytest
 ```
 
@@ -37,30 +35,33 @@ python -m bokasher.app
 または:
 
 ```bash
-bokasher
+cd desktop && npm start
 ```
+
+Electron が Python のローカル API（`127.0.0.1:8765`）と Vite（`127.0.0.1:5178`）を起動します。
 
 ## 使い方
 
-1. 入力の動画ファイルを選ぶ
+1. 動画をドラッグ＆ドロップ（またはクリックして選択）する
 2. 出力パスを確認する（初期値は `元ファイル名_blurred.mp4`）
 3. ブラー強度と「精度優先 / 速度優先」を選ぶ
 4. プレビューで結果を確認する
 5. 「処理開始」で書き出す
 
-精度優先は毎フレーム、YuNet と MediaPipe の両方で検出します。速度優先は YuNet のみ、3 フレームごとです。iPhone などの縦撮りは回転メタデータを見て正立してから処理します。書き出しは macOS の VideoToolbox（Apple Silicon / AMD GPU）を使います。音声がある動画は、元の音声をコピーして出力に残します。
+精度優先は 2 フレームごと・検出長辺 960、速度優先は 4 フレームごと・検出長辺 640 です。検出は InsightFace の SCRFD-2.5G_KPS を使います（Apple Silicon では CoreML）。iPhone などの縦撮りは回転メタデータを見て正立してから処理します。書き出しは macOS の VideoToolbox、それ以外は libx264 です。音声がある動画は、元の音声をコピーして出力に残します。
 
 ## 処理の流れ
 
-1. 回転メタデータを見て表示向き（縦 / 横）を決める
-2. 可能なら VideoToolbox でデコード
-3. YuNet（必要なら MediaPipe も）で顔検出
-4. フレーム間の箱の平滑化
-5. 楕円マスクつきガウシアンブラー
-6. VideoToolbox（なければ libx264）で H.264 書き出し + 元音声の mux
+1. Electron が UI を表示し、Python API にファイルパスを渡す
+2. 回転メタデータを見て表示向き（縦 / 横）を決める
+3. 可能なら VideoToolbox でデコード
+4. SCRFD-2.5G_KPS で顔検出
+5. フレーム間の箱の平滑化
+6. 楕円マスクつきガウシアンブラー
+7. VideoToolbox（なければ libx264）で H.264 書き出し + 元音声の mux
 
 ## いまできないこと
 
 - カメラや画面共有のリアルタイム処理
 - 「この人だけ残す」といった選択的ブラー
-- インストーラや `.app` 配布
+- インストーラや `.app` / `.exe` 配布

@@ -45,7 +45,7 @@ class ProcessSettings:
     detect_every: int = 1
     detect_max_side: int = 640
     prefer_gpu: bool = True
-    use_dual_detector: bool = True
+    use_dual_detector: bool = False
     output_max_side: int = 1920
 
     def __post_init__(self) -> None:
